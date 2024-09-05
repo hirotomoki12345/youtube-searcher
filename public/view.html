@@ -1,39 +1,41 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Video Player</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <video id="videoPlayer" controls>
-      Your browser does not support the video tag.
-    </video>
-    <div id="loader">Loading...</div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Player</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <video id="videoPlayer" controls>
+    Your browser does not support the video tag.
+  </video>
+  <div id="loader">Loading...</div>
 
-    <script>
-      const urlParams = new URLSearchParams(window.location.search);
-      const urls = urlParams.get("urls");
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const urls = urlParams.get("urls");
 
-      if (urls) {
-        document.getElementById("loader").style.display = "block"; 
-        fetch(`/mp4?url=${encodeURIComponent(urls)}`)
-          .then((response) => response.blob())
-          .then((blob) => {
-            const videoUrl = URL.createObjectURL(blob);
-            const videoPlayer = document.getElementById("videoPlayer");
-            videoPlayer.src = videoUrl;
-            videoPlayer.play();
-            document.getElementById("loader").style.display = "none";
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            document.getElementById("loader").style.display = "none";
-          });
-      } else {
-        console.error("No 'urls' parameter found in the URL");
-      }
-    </script>
-  </body>
+    if (urls) {
+      document.getElementById("loader").style.display = "block"; 
+      fetch(`/mp4?url=${encodeURIComponent(urls)}`)
+        .then((response) => response.blob())
+        .then((blob) => {
+          const videoUrl = URL.createObjectURL(blob);
+          const videoPlayer = document.getElementById("videoPlayer");
+          videoPlayer.src = videoUrl;
+          videoPlayer.play();
+          document.getElementById("loader").style.display = "none";
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          document.getElementById("loader").style.display = "none";
+          alert("Failed to load video.");
+        });
+    } else {
+      console.error("No 'urls' parameter found in the URL");
+      alert("No video URL provided.");
+    }
+  </script>
+</body>
 </html>

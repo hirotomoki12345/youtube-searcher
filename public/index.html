@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+    }
+    #searchForm {
+      margin-bottom: 20px;
+    }
+    #searchInput {
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+    }
+    #searchButton {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .result {
+      display: flex;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .thumbnail {
+      margin-right: 20px;
+    }
+    .thumbnail img {
+      width: 160px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .details {
+      max-width: 600px;
+    }
+    .details h3 {
+      margin: 0 0 10px;
+    }
+    .details p {
+      margin: 0;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>YouTube Search</h1>
+  
+  <form id="searchForm">
+    <input type="text" id="searchInput" placeholder="Search YouTube..." required>
+    <button type="submit" id="searchButton">Search</button>
+  </form>
+
+  <div id="results"></div>
+
+  <script>
+    const form = document.getElementById('searchForm');
+    const resultsDiv = document.getElementById('results');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      const query = document.getElementById('searchInput').value;
+
+      // APIにリクエストを送る
+      fetch(`https://script.google.com/macros/s/AKfycbwMCMOmoNlgvwCb-7DlZZiSgs2ve6RMrofN8KgFJV-k4KEcRgRZ07ILeTi7rp-JaIVZ/exec?text=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          // 結果の表示をクリア
+          resultsDiv.innerHTML = '';
+          
+          // 検索結果を表示
+          if (data.results && data.results.length > 0) {
+            data.results.forEach(item => {
+              // 結果を作成
+              const resultDiv = document.createElement('div');
+              resultDiv.className = 'result';
+              
+              const thumbnailDiv = document.createElement('div');
+              thumbnailDiv.className = 'thumbnail';
+              const thumbnailImg = document.createElement('img');
+              thumbnailImg.src = `https://img.youtube.com/vi/${item.videoId}/0.jpg`;
+              thumbnailDiv.appendChild(thumbnailImg);
+              
+              const detailsDiv = document.createElement('div');
+              detailsDiv.className = 'details';
+              
+              const titleLink = document.createElement('a');
+              titleLink.href = item.url;
+              titleLink.target = '_blank';
+              const title = document.createElement('h3');
+              title.textContent = item.title;
+              titleLink.appendChild(title);
+              
+              const description = document.createElement('p');
+              description.textContent = item.description;
+              
+              detailsDiv.appendChild(titleLink);
+              detailsDiv.appendChild(description);
+              
+              resultDiv.appendChild(thumbnailDiv);
+              resultDiv.appendChild(detailsDiv);
+              
+              resultsDiv.appendChild(resultDiv);
+            });
+          } else {
+            resultsDiv.innerHTML = '<p>No results found</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          resultsDiv.innerHTML = '<p>An error occurred. Please try again later.</p>';
+        });
+    });
+  </script>
+
+</body>
+</html>

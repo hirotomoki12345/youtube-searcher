@@ -92,7 +92,7 @@
               
               // Create the local link to view.html
               const titleLink = document.createElement('a');
-              titleLink.href = `/view.html?url=${encodeURIComponent(item.url)}`;
+              titleLink.href = `/view.html?urls=${encodeURIComponent(item.url)}`;
               titleLink.target = '_blank'; // Open in a new tab
               const title = document.createElement('h3');
               title.textContent = item.title;

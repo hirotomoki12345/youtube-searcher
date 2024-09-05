@@ -73,15 +73,11 @@
 
   <div id="results"></div>
 
-  <video id="videoPlayer" controls>
-    Your browser does not support the video tag.
-  </video>
   <div id="loader">Loading...</div>
 
   <script>
     const form = document.getElementById('searchForm');
     const resultsDiv = document.getElementById('results');
-    const videoPlayer = document.getElementById('videoPlayer');
     const loader = document.getElementById('loader');
 
     form.addEventListener('submit', function(event) {
@@ -113,9 +109,8 @@
               detailsDiv.className = 'details';
               
               const titleLink = document.createElement('a');
-              titleLink.href = `#`;
-              titleLink.dataset.url = item.url;
-              titleLink.className = 'playVideo';
+              titleLink.href = `view.html?urls=${encodeURIComponent(item.url)}`;
+              titleLink.target = '_blank'; // Open in a new tab
               const title = document.createElement('h3');
               title.textContent = item.title;
               titleLink.appendChild(title);
@@ -131,29 +126,6 @@
               
               resultsDiv.appendChild(resultDiv);
             });
-
-            // Add click event listener to all playVideo links
-            document.querySelectorAll('.playVideo').forEach(link => {
-              link.addEventListener('click', function(event) {
-                event.preventDefault();
-                const videoUrl = this.dataset.url;
-                loader.style.display = "block"; 
-                fetch(`/mp4?url=${encodeURIComponent(videoUrl)}`)
-                  .then(response => response.blob())
-                  .then(blob => {
-                    const videoBlobUrl = URL.createObjectURL(blob);
-                    videoPlayer.src = videoBlobUrl;
-                    videoPlayer.play();
-                    loader.style.display = "none";
-                  })
-                  .catch(error => {
-                    console.error("Error:", error);
-                    loader.style.display = "none";
-                    alert("Failed to load video.");
-                  });
-              });
-            });
-
           } else {
             resultsDiv.innerHTML = '<p>No results found</p>';
           }

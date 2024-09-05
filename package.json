@@ -1,0 +1,22 @@
+{
+  "name": "youtube-video-downloader",
+  "version": "1.0.0",
+  "description": "A server for downloading and converting YouTube videos to MP4 and MP3 formats.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "youtube-dl-exec": "^1.0.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "ffmpeg-static": "^4.4.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^5.5.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.12"
+  },
+  "license": "MIT"
+}

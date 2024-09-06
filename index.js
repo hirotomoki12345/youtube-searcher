@@ -8,7 +8,7 @@ const cors = require("cors");
 const ffmpegPath = require('ffmpeg-static');
 
 const app = express();
-const port = 3020;
+const port = 3030;
 
 app.use(cors());
 app.use(express.json());

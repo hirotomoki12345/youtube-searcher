@@ -33,6 +33,7 @@ if [ "$CHOICE" == "1" ]; then
 elif [ "$CHOICE" == "2" ]; then
     sudo pm2 stop "youtube-searcher-app"
     sudo pm2 delete "youtube-searcher-app"
+    sudo rm -r youtube-searcher
     echo "Application stopped and deleted."
 
 elif [ "$CHOICE" == "3" ]; then

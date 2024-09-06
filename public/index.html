@@ -1,141 +1,96 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Search and Video Player</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f4f4f4;
-    }
-    #searchForm {
-      margin-bottom: 20px;
-    }
-    #searchInput {
-      padding: 10px;
-      width: 300px;
-      font-size: 16px;
-    }
-    #searchButton {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .result {
-      display: flex;
-      margin-bottom: 20px;
-      padding: 10px;
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    .thumbnail {
-      margin-right: 20px;
-    }
-    .thumbnail img {
-      width: 160px;
-      height: 90px;
-      object-fit: cover;
-      border-radius: 4px;
-    }
-    .details {
-      max-width: 600px;
-    }
-    .details h3 {
-      margin: 0 0 10px;
-    }
-    .details p {
-      margin: 0;
-      color: #666;
-    }
-    #videoPlayer {
-      width: 100%;
-      max-width: 800px;
-      margin: 20px 0;
-    }
-    #loader {
-      display: none;
-      font-size: 16px;
-      color: #333;
-    }
-  </style>
+  <title>YouTube Search</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <h1>YouTube Search and Video Player</h1>
-  
-  <form id="searchForm">
-    <input type="text" id="searchInput" placeholder="Search YouTube..." required>
-    <button type="submit" id="searchButton">Search</button>
-  </form>
-
-  <div id="results"></div>
-
-  <div id="loader">Loading...</div>
-
+  <div class="container">
+    <h1>YouTube Video Search</h1>
+    <form id="searchForm">
+      <input type="text" id="searchText" placeholder="Search for videos" required>
+      <input type="number" id="maxResults" placeholder="Number of results per page (1-100)" min="1" max="100" value="5">
+      <button type="submit" id="searchButton">Search</button>
+    </form>
+    <div id="results"></div>
+    <div id="loading" style="display:none;">Loading...</div>
+  </div>
   <script>
-    const form = document.getElementById('searchForm');
-    const resultsDiv = document.getElementById('results');
-    const loader = document.getElementById('loader');
-
-    form.addEventListener('submit', function(event) {
+    let pageToken = '';
+    let isLoading = false;
+    
+    document.getElementById('searchForm').addEventListener('submit', function(event) {
       event.preventDefault();
-      const query = document.getElementById('searchInput').value.trim();
+      pageToken = '';
+      document.getElementById('results').innerHTML = '';
+      fetchResults();
+    });
 
-      if (!query) {
-        alert("Please enter a search query.");
-        return;
+    window.addEventListener('scroll', function() {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
+        fetchResults();
       }
+    });
 
-      fetch(`https://script.google.com/macros/s/AKfycbwMCMOmoNlgvwCb-7DlZZiSgs2ve6RMrofN8KgFJV-k4KEcRgRZ07ILeTi7rp-JaIVZ/exec?text=${encodeURIComponent(query)}`)
+    document.getElementById('searchText').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // デフォルトの Enter キー動作をキャンセル
+        document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+      }
+    });
+
+    function fetchResults() {
+      isLoading = true;
+      const searchText = document.getElementById('searchText').value;
+      const maxResults = document.getElementById('maxResults').value;
+      const searchButton = document.getElementById('searchButton');
+      
+      searchButton.disabled = true; // ボタンを無効化
+      searchButton.style.backgroundColor = '#ddd'; // ボタンの色を変更
+      
+      document.getElementById('loading').style.display = 'block';
+      
+      fetch(`https://script.google.com/macros/s/AKfycbzWc0hJTG9R0FzFYqsWHozGgwUTNcZK_5QptkngzKHQsPExpmYUuBH22W7ZuRWSh5g/exec?text=${encodeURIComponent(searchText)}&q=${encodeURIComponent(maxResults)}&pageToken=${encodeURIComponent(pageToken)}`)
         .then(response => response.json())
         .then(data => {
-          resultsDiv.innerHTML = '';
+          document.getElementById('loading').style.display = 'none';
+          isLoading = false;
+          searchButton.disabled = false; 
+          searchButton.style.backgroundColor = '#007bff'; 
           
-          if (data.results && data.results.length > 0) {
-            data.results.forEach(item => {
-              const resultDiv = document.createElement('div');
-              resultDiv.className = 'result';
-              
-              const thumbnailDiv = document.createElement('div');
-              thumbnailDiv.className = 'thumbnail';
-              const thumbnailImg = document.createElement('img');
-              thumbnailImg.src = `https://img.youtube.com/vi/${item.videoId}/0.jpg`;
-              thumbnailDiv.appendChild(thumbnailImg);
-              
-              const detailsDiv = document.createElement('div');
-              detailsDiv.className = 'details';
-              
-              const titleLink = document.createElement('a');
-              titleLink.href = `view.html?urls=${encodeURIComponent(item.url)}`;
-              titleLink.target = '_blank'; // Open in a new tab
-              const title = document.createElement('h3');
-              title.textContent = item.title;
-              titleLink.appendChild(title);
-              
-              const description = document.createElement('p');
-              description.textContent = item.description;
-              
-              detailsDiv.appendChild(titleLink);
-              detailsDiv.appendChild(description);
-              
-              resultDiv.appendChild(thumbnailDiv);
-              resultDiv.appendChild(detailsDiv);
-              
-              resultsDiv.appendChild(resultDiv);
+          if (data.results) {
+            data.results.forEach(video => {
+              const videoElement = document.createElement('div');
+              videoElement.className = 'video';
+              videoElement.innerHTML = `
+                <a href="/view.html?youtubeurl=${video.url}" target="_blank">
+                  <img src="https://img.youtube.com/vi/${video.videoId}/default.jpg" alt="${video.title}" class="thumbnail">
+                </a>
+                <div class="info">
+                  <h2>${video.title}</h2>
+                  <p>${video.description}</p>
+                  <p>Published: ${new Date(video.publishedAt).toLocaleDateString()}</p>
+                  <p>Channel: ${video.channelTitle}</p>
+                </div>
+              `;
+              document.getElementById('results').appendChild(videoElement);
             });
+            pageToken = data.nextPageToken || ''; // APIから取得した次のページトークンを設定
           } else {
-            resultsDiv.innerHTML = '<p>No results found</p>';
+            document.getElementById('results').innerHTML = '<p>No results found</p>';
           }
         })
         .catch(error => {
           console.error('Error:', error);
-          resultsDiv.innerHTML = '<p>An error occurred. Please try again later.</p>';
+          document.getElementById('loading').style.display = 'none';
+          isLoading = false;
+          searchButton.disabled = false; // ボタンを再度有効化
+          searchButton.style.backgroundColor = '#007bff'; // ボタンの色を元に戻す
+          document.getElementById('results').innerHTML = '<p>An error occurred. Please try again.</p>';
         });
-    });
+    }
   </script>
-
 </body>
 </html>

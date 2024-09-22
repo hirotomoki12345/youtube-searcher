@@ -5,7 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
-const ffmpegPath = require('ffmpeg-static');
+const ffmpegPath = require("ffmpeg-static");
 
 const app = express();
 const port = 3503;
@@ -47,26 +47,29 @@ function generateRandomFileName(extension) {
 }
 
 function cleanupFiles(filePaths) {
-  return Promise.all(filePaths.map(filePath =>
-    new Promise((resolve, reject) => {
-      fs.unlink(filePath, (err) => {
-        if (err) return reject(err);
-        resolve();
-      });
-    })
-  ));
+  return Promise.all(
+    filePaths.map(
+      (filePath) =>
+        new Promise((resolve, reject) => {
+          fs.unlink(filePath, (err) => {
+            if (err) return reject(err);
+            resolve();
+          });
+        })
+    )
+  );
 }
 
 app.get("/video-info", async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
-    return res.status(400).json({ error: "URLクエリパラメータが必要です" });
+    return res.status(400).json({ error: "URL is required" });
   }
 
   const cleanUrl = cleanYouTubeUrl(url);
   if (!cleanUrl) {
-    return res.status(400).json({ error: "無効なYouTube URLです" });
+    return res.status(400).json({ error: "Invalid YouTube URL" });
   }
 
   try {
@@ -79,7 +82,7 @@ app.get("/video-info", async (req, res) => {
     res.json(output);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "エラーが発生しました" });
+    res.status(500).json({ error: "An error occurred" });
   }
 });
 
@@ -87,19 +90,21 @@ app.get("/mp4", async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
-    return res.status(400).json({ error: "URLクエリパラメータが必要です" });
+    return res.status(400).json({ error: "URL is required" });
   }
 
   const cleanUrl = cleanYouTubeUrl(url);
   if (!cleanUrl) {
-    return res.status(400).json({ error: "無効なYouTube URLです" });
+    return res.status(400).json({ error: "Invalid YouTube URL" });
   }
 
   try {
     const fileName = generateRandomFileName(".mp4");
     const tempFilePath = path.join(__dirname, fileName);
 
-    await youtubedl(cleanUrl, {
+    res.setTimeout(0);
+
+    const stream = youtubedl.exec(cleanUrl, {
       output: tempFilePath,
       format: "mp4",
       noCheckCertificates: true,
@@ -107,17 +112,24 @@ app.get("/mp4", async (req, res) => {
       preferFreeFormats: true,
     });
 
-    res.download(tempFilePath, (err) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: "ダウンロード中にエラーが発生しました" });
-      } else {
-        cleanupFiles([tempFilePath]).catch(console.error);
-      }
+    stream.on("close", () => {
+      res.download(tempFilePath, (err) => {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: "Download error" });
+        } else {
+          cleanupFiles([tempFilePath]).catch(console.error);
+        }
+      });
+    });
+
+    stream.on("error", (error) => {
+      console.error(error);
+      res.status(500).json({ error: "An error occurred" });
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "エラーが発生しました" });
+    res.status(500).json({ error: "An error occurred" });
   }
 });
 
@@ -125,59 +137,46 @@ app.get("/mp3", async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
-    return res.status(400).json({ error: "URLクエリパラメータが必要です" });
+    return res.status(400).json({ error: "URL is required" });
   }
 
   const cleanUrl = cleanYouTubeUrl(url);
   if (!cleanUrl) {
-    return res.status(400).json({ error: "無効なYouTube URLです" });
+    return res.status(400).json({ error: "Invalid YouTube URL" });
   }
 
-  const mp4FileName = generateRandomFileName(".mp4");
-  const mp4FilePath = path.join(__dirname, mp4FileName);
-
-  const mp3FileName = generateRandomFileName(".mp3");
-  const mp3FilePath = path.join(__dirname, mp3FileName);
-
   try {
-    await youtubedl(cleanUrl, {
-      output: mp4FilePath,
-      format: "mp4",
+    const fileName = generateRandomFileName(".mp3");
+    const tempFilePath = path.join(__dirname, fileName);
+
+    res.setTimeout(0);
+
+    const stream = youtubedl.exec(cleanUrl, {
+      output: tempFilePath,
+      extractAudio: true,
+      audioFormat: "mp3",
       noCheckCertificates: true,
       noWarnings: true,
-      preferFreeFormats: true,
     });
 
-    const ffmpeg = require("fluent-ffmpeg");
-    ffmpeg(mp4FilePath)
-      .setFfmpegPath(ffmpegPath)
-      .toFormat("mp3")
-      .on("end", async () => {
-        try {
-          await new Promise((resolve, reject) => {
-            res.download(mp3FilePath, (err) => {
-              if (err) return reject(err);
-              resolve();
-            });
-          });
-          await cleanupFiles([mp4FilePath, mp3FilePath]);
-        } catch (err) {
+    stream.on("close", () => {
+      res.download(tempFilePath, (err) => {
+        if (err) {
           console.error(err);
-          res.status(500).json({ error: "ダウンロード中にエラーが発生しました" });
-          await cleanupFiles([mp4FilePath, mp3FilePath]);
+          res.status(500).json({ error: "Download error" });
+        } else {
+          cleanupFiles([tempFilePath]).catch(console.error);
         }
-      })
-      .on("error", async (err) => {
-        console.error(err);
-        res.status(500).json({ error: "エラーが発生しました" });
-        await cleanupFiles([mp4FilePath, mp3FilePath]);
-      })
-      .save(mp3FilePath);
+      });
+    });
 
+    stream.on("error", (error) => {
+      console.error(error);
+      res.status(500).json({ error: "An error occurred" });
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "エラーが発生しました" });
-    await cleanupFiles([mp4FilePath, mp3FilePath]);
+    res.status(500).json({ error: "An error occurred" });
   }
 });
 

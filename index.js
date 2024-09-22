@@ -5,11 +5,11 @@ const path = require("path");
 const crypto = require("crypto");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
-const ffmpegPath = require("ffmpeg-static");
 
 const app = express();
 const port = 3503;
 
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -20,6 +20,11 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
 });
 app.use(limiter);
+
+app.use((req, res, next) => {
+  res.setTimeout(0);
+  next();
+});
 
 function cleanYouTubeUrl(url) {
   try {
@@ -102,8 +107,6 @@ app.get("/mp4", async (req, res) => {
     const fileName = generateRandomFileName(".mp4");
     const tempFilePath = path.join(__dirname, fileName);
 
-    res.setTimeout(0);
-
     const stream = youtubedl.exec(cleanUrl, {
       output: tempFilePath,
       format: "mp4",
@@ -148,8 +151,6 @@ app.get("/mp3", async (req, res) => {
   try {
     const fileName = generateRandomFileName(".mp3");
     const tempFilePath = path.join(__dirname, fileName);
-
-    res.setTimeout(0);
 
     const stream = youtubedl.exec(cleanUrl, {
       output: tempFilePath,

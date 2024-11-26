@@ -1,3 +1,4 @@
+
 const express = require("express");
 const youtubedl = require("youtube-dl-exec");
 const fs = require("fs");
@@ -143,20 +144,28 @@ app.get("/mp4", async (req, res) => {
       preferFreeFormats: true,
     });
 
+    let sent = false;
+
     stream.on("close", () => {
-      res.download(tempFilePath, (err) => {
-        if (err) {
-          console.error(err);
-          res.status(500).json({ error: "Download error" });
-        } else {
-          cleanupFiles([tempFilePath]).catch(console.error);
-        }
-      });
+      if (!sent) {
+        sent = true;
+        res.download(tempFilePath, (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Download error" });
+          } else {
+            cleanupFiles([tempFilePath]).catch(console.error);
+          }
+        });
+      }
     });
 
     stream.on("error", (error) => {
-      console.error(error);
-      res.status(500).json({ error: "An error occurred" });
+      if (!sent) {
+        sent = true;
+        console.error(error);
+        res.status(500).json({ error: "An error occurred" });
+      }
     });
   } catch (error) {
     console.error(error);
@@ -188,26 +197,35 @@ app.get("/mp3", async (req, res) => {
       noWarnings: true,
     });
 
+    let sent = false;
+
     stream.on("close", () => {
-      res.download(tempFilePath, (err) => {
-        if (err) {
-          console.error(err);
-          res.status(500).json({ error: "Download error" });
-        } else {
-          cleanupFiles([tempFilePath]).catch(console.error);
-        }
-      });
+      if (!sent) {
+        sent = true;
+        res.download(tempFilePath, (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Download error" });
+          } else {
+            cleanupFiles([tempFilePath]).catch(console.error);
+          }
+        });
+      }
     });
 
     stream.on("error", (error) => {
-      console.error(error);
-      res.status(500).json({ error: "An error occurred" });
+      if (!sent) {
+        sent = true;
+        console.error(error);
+        res.status(500).json({ error: "An error occurred" });
+      }
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "An error occurred" });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

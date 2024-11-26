@@ -9,7 +9,35 @@ const cors = require("cors");
 const app = express();
 const port = 3503;
 
-app.set('trust proxy', 1);
+const tmpDir = path.join(__dirname, "tmp");
+
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir);
+}
+
+setInterval(() => {
+  fs.readdir(tmpDir, (err, files) => {
+    if (err) return;
+
+    const now = Date.now();
+    const expirationTime = 60 * 60 * 1000;
+
+    files.forEach((file) => {
+      const filePath = path.join(tmpDir, file);
+      fs.stat(filePath, (err, stats) => {
+        if (err) return;
+
+        if (now - stats.mtimeMs > expirationTime) {
+          fs.unlink(filePath, (err) => {
+            if (err) return;
+          });
+        }
+      });
+    });
+  });
+}, 15 * 60 * 1000);
+
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -105,7 +133,7 @@ app.get("/mp4", async (req, res) => {
 
   try {
     const fileName = generateRandomFileName(".mp4");
-    const tempFilePath = path.join(__dirname, fileName);
+    const tempFilePath = path.join(tmpDir, fileName);
 
     const stream = youtubedl.exec(cleanUrl, {
       output: tempFilePath,
@@ -150,7 +178,7 @@ app.get("/mp3", async (req, res) => {
 
   try {
     const fileName = generateRandomFileName(".mp3");
-    const tempFilePath = path.join(__dirname, fileName);
+    const tempFilePath = path.join(tmpDir, fileName);
 
     const stream = youtubedl.exec(cleanUrl, {
       output: tempFilePath,
